@@ -3,7 +3,7 @@ const path = require('path');
 exports.debug = false;
 
 exports.web_port = 10000;
-exports.control_port = 22222;
+exports.control_port = 443;
 
 // Paths
 
@@ -68,4 +68,5 @@ exports.logTypes = {
         color: 'blue'
     }
 }
+
 
